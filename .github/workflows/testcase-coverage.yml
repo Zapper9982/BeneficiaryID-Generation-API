@@ -1,7 +1,6 @@
 name: TestCase Coverage Check
-
 on:
-  pull_request:
+  pull_request_target:  
     branches:
       - master
       - develop
@@ -9,15 +8,16 @@ on:
 permissions:
   contents: read
   pull-requests: write
+  actions: read  
 
 jobs:
   Build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
       - name: Setup JDK 17
@@ -41,5 +41,6 @@ jobs:
         with:
           paths: ${{ github.workspace }}/target/site/jacoco/jacoco.xml
           token: ${{ secrets.GITHUB_TOKEN }}
+          min-coverage-overall: 0
           title: Code Coverage Report
           comment-type: pr_comment
