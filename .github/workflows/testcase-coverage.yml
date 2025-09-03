@@ -1,21 +1,30 @@
 name: TestCase Coverage Check
 on:
   pull_request:
-permissions:
-  contents: read
-  pull-requests: write
-  actions: read
+  pull_request_target:
+    types: [opened, synchronize]
+
+permissions: {} 
+
 jobs:
-  Build:
+  build_and_upload_report:
+    
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read 
+      
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+       
+
       - name: Setup JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
+
       - name: Cache Maven dependencies
         uses: actions/cache@v3
         with:
@@ -23,20 +32,38 @@ jobs:
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-m2-
+
       - name: Build with Maven
         run: mvn clean verify
+
       - name: Upload JaCoCo Report Artifact
         uses: actions/upload-artifact@v4
         with:
           name: jacoco-report
           path: target/site/jacoco/jacoco.xml
           if-no-files-found: warn
+
+  compare_coverage:
+    if: github.event_name == 'pull_request_target'
+    runs-on: ubuntu-latest
+    needs: build_and_upload_report
+    permissions:
+      contents: read
+      pull-requests: write 
+
+    steps:
+      - name: Download JaCoCo Report Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: jacoco-report
+          path: jacoco-report
+
       - name: Compare JaCoCo Coverage
         uses: madrapps/jacoco-report@v1.7.2
         with:
-          paths: ${{ github.workspace }}/target/site/jacoco/jacoco.xml
+          paths: jacoco-report/jacoco.xml
           token: ${{ secrets.GITHUB_TOKEN }}
           min-coverage-overall: 40
           min-coverage-changed-files: 60
           title: Code Coverage Report
-          comment-type: pr_comment
+          comment-type: pr_comment 
