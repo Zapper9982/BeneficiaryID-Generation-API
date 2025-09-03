@@ -11,9 +11,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 0
       - name: Setup JDK 17
         uses: actions/setup-java@v4
         with:
@@ -39,7 +36,7 @@ jobs:
         with:
           paths: ${{ github.workspace }}/target/site/jacoco/jacoco.xml
           token: ${{ secrets.GITHUB_TOKEN }}
-          min-coverage-overall: 0
-          min-coverage-changed-files: 0
+          min-coverage-overall: 40
+          min-coverage-changed-files: 60
           title: Code Coverage Report
           comment-type: pr_comment
