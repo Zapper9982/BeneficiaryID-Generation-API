@@ -1,0 +1,66 @@
+name: TestCase Coverage Check
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  actions: read
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      # Safe checkout - only checkout the base branch initially
+      - name: Checkout base repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
+      # Fetch and merge PR changes safely
+      - name: Fetch and merge PR
+        env:
+          PR_NUMBER: ${{ github.event.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          
+          # Fetch the PR
+          git fetch origin pull/$PR_NUMBER/head:pr-branch
+          
+          # Merge it (this is safer than direct checkout)
+          git merge pr-branch --no-commit --no-ff
+          
+          # Verify we got the expected commit
+          if [ "$(git rev-parse pr-branch)" != "$HEAD_SHA" ]; then
+            echo "Error: SHA mismatch"
+            exit 1
+          fi
+          
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          
+      - name: Build with Maven
+        run: mvn clean verify
+        
+      - name: Upload JaCoCo Report Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: target/site/jacoco/jacoco.xml
+          if-no-files-found: warn
+          
+      - name: Comment PR with Coverage
+        uses: madrapps/jacoco-report@v1.7.2
+        with:
+          paths: ${{ github.workspace }}/target/site/jacoco/jacoco.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          min-coverage-overall: 0
+          title: Code Coverage Report
+          update-comment: true
+          comment-type: pr_comment
