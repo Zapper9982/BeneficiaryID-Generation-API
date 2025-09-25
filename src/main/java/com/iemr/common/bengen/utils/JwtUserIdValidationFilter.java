@@ -5,7 +5,6 @@ import java.util.Arrays;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 
 import com.iemr.common.bengen.utils.http.AuthorizationHeaderRequestWrapper;
 
@@ -70,7 +69,6 @@ public class JwtUserIdValidationFilter implements Filter {
 		}
 
 		// Log headers for debugging
-		String jwtTokenFromHeader = request.getHeader("Jwttoken");
 		logger.info("JWT token from header: ");
 
 		// Skip login and public endpoints
@@ -120,7 +118,6 @@ public class JwtUserIdValidationFilter implements Filter {
 
 			logger.warn("No valid authentication token found");
 			response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized: Invalid or missing token");
-
 		} catch (Exception e) {
 			logger.error("Authorization error: ", e);
 			response.sendError(
@@ -149,14 +146,13 @@ public class JwtUserIdValidationFilter implements Filter {
 	}
 
 	private boolean isMobileClient(String userAgent) {
-		if (userAgent == null)
+		if (userAgent == null) {
 			return false;
-
+		}
 		userAgent = userAgent.toLowerCase();
-
-		return userAgent.contains("okhttp"); // iOS (custom clients)
+		return userAgent.contains("okhttp");
 	}
-
+	
 	private String getJwtTokenFromCookies(HttpServletRequest request) {
 		Cookie[] cookies = request.getCookies();
 		if (cookies != null) {
